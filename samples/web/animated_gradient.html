@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Animated Gradient Clock</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4, #feca57);
+            background-size: 400% 400%;
+            animation: gradientShift 10s ease infinite;
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        .clock-container {
+            text-align: center;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        .time {
+            font-size: 4em;
+            font-weight: bold;
+            margin-bottom: 20px;
+            letter-spacing: 2px;
+        }
+        
+        .date {
+            font-size: 1.5em;
+            opacity: 0.9;
+            margin-bottom: 10px;
+        }
+        
+        .welcome {
+            font-size: 1.2em;
+            opacity: 0.8;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="clock-container">
+        <div class="time" id="time"></div>
+        <div class="date" id="date"></div>
+        <div class="welcome">🎨 Welcome to Lively Pi! 🎨</div>
+    </div>
+    
+    <script>
+        function updateClock() {
+            const now = new Date();
+            
+            document.getElementById('time').textContent = now.toLocaleTimeString('en-US', {
+                hour12: false,
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            
+            document.getElementById('date').textContent = now.toLocaleDateString('en-US', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+        }
+        
+        updateClock();
+        setInterval(updateClock, 1000);
+        
+        // Add some subtle animation on click
+        document.addEventListener('click', function() {
+            document.body.style.animationDuration = '3s';
+            setTimeout(() => {
+                document.body.style.animationDuration = '10s';
+            }, 3000);
+        });
+    </script>
+</body>
+</html>

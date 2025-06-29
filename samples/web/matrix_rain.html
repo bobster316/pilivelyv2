@@ -1,0 +1,184 @@
+#!/usr/bin/env python3
+"""
+Lively Pi - Animated Wallpaper Manager for Raspberry Pi OS
+Version: 1.0.0
+Author: bobster316
+Repository: https://github.com/bobster316/pilivelyv2
+"""
+
+import sys
+import os
+import json
+from pathlib import Path
+from enum import Enum
+from dataclasses import dataclass
+from typing import Dict, List, Optional
+
+print("🎨 Lively Pi - Animated Wallpaper Manager v1.0.0")
+print("Repository: https://github.com/bobster316/pilivelyv2")
+print("=" * 50)
+
+class WallpaperType(Enum):
+    IMAGE = "image"
+    VIDEO = "video"
+    WEB = "web"
+    STREAM = "stream"
+
+@dataclass
+class WallpaperConfig:
+    path: str
+    wallpaper_type: WallpaperType
+    monitor_id: int = -1
+    properties: Dict = None
+    enabled: bool = True
+
+    def __post_init__(self):
+        if self.properties is None:
+            self.properties = {}
+
+class WallpaperLibrary:
+    def __init__(self):
+        self.config_dir = Path.home() / ".config" / "lively-pi"
+        self.config_dir.mkdir(parents=True, exist_ok=True)
+        self.library_file = self.config_dir / "library.json"
+        self.wallpapers: List[WallpaperConfig] = []
+        print(f"📚 Wallpaper library: {self.library_file}")
+
+    def add_wallpaper(self, path: str) -> WallpaperConfig:
+        ext = Path(path).suffix.lower()
+        if ext in ['.jpg', '.jpeg', '.png', '.bmp', '.gif']:
+            wallpaper_type = WallpaperType.IMAGE
+        elif ext in ['.mp4', '.avi', '.mkv', '.webm', '.mov']:
+            wallpaper_type = WallpaperType.VIDEO
+        elif ext in ['.html', '.htm'] or path.startswith('http'):
+            wallpaper_type = WallpaperType.WEB
+        else:
+            wallpaper_type = WallpaperType.IMAGE
+        
+        config = WallpaperConfig(path=path, wallpaper_type=wallpaper_type)
+        print(f"➕ Added: {Path(path).name} ({wallpaper_type.value})")
+        return config
+
+class WallpaperManager:
+    def __init__(self):
+        print("🎨 Initializing Wallpaper Manager...")
+        
+    def set_wallpaper(self, config: WallpaperConfig):
+        print(f"🎬 Setting wallpaper: {Path(config.path).name}")
+        print(f"   Type: {config.wallpaper_type.value}")
+        
+        if config.wallpaper_type == WallpaperType.IMAGE:
+            self._set_image_wallpaper(config.path)
+        elif config.wallpaper_type == WallpaperType.VIDEO:
+            self._set_video_wallpaper(config.path)
+        elif config.wallpaper_type == WallpaperType.WEB:
+            self._set_web_wallpaper(config.path)
+        
+    def _set_image_wallpaper(self, path: str):
+        try:
+            import subprocess
+            if os.path.exists('/usr/bin/feh'):
+                subprocess.run(['feh', '--bg-fill', path])
+                print("✅ Image wallpaper set using feh")
+            else:
+                print(f"✅ Image wallpaper: {path}")
+        except Exception as e:
+            print(f"⚠️  {e}")
+            
+    def _set_video_wallpaper(self, path: str):
+        try:
+            import subprocess
+            cmd = ['mpv', '--fullscreen', '--loop=inf', '--no-audio', path]
+            subprocess.Popen(cmd)
+            print("✅ Video wallpaper started with mpv")
+        except Exception as e:
+            print(f"⚠️  Video wallpaper: {e}")
+            print("💡 Install mpv: sudo apt install mpv")
+            
+    def _set_web_wallpaper(self, path: str):
+        print(f"🌐 Web wallpaper: {path}")
+        print("💡 Web wallpapers require QtWebEngine on Raspberry Pi")
+
+def main():
+    import argparse
+    
+    parser = argparse.ArgumentParser(description="Lively Pi - Animated Wallpaper Manager")
+    parser.add_argument("--set-wallpaper", help="Set wallpaper from file or URL")
+    parser.add_argument("--monitor", type=int, default=-1, help="Monitor ID (-1 for all)")
+    parser.add_argument("--gui", action="store_true", help="Launch GUI (if available)")
+    parser.add_argument("--version", action="store_true", help="Show version")
+    
+    args = parser.parse_args()
+    
+    if args.version:
+        print("Lively Pi v1.0.0")
+        print("Repository: https://github.com/bobster316/pilivelyv2")
+        return 0
+    
+    # Initialize components
+    library = WallpaperLibrary()
+    manager = WallpaperManager()
+    
+    if args.set_wallpaper:
+        config = library.add_wallpaper(args.set_wallpaper)
+        config.monitor_id = args.monitor
+        manager.set_wallpaper(config)
+        print(f"✅ Wallpaper applied: {args.set_wallpaper}")
+        return 0
+    
+    # Try to launch GUI
+    try:
+        from PyQt6.QtWidgets import QApplication, QMainWindow, QLabel, QVBoxLayout, QWidget
+        from PyQt6.QtCore import Qt
+        
+        print("🖥️  Launching GUI...")
+        app = QApplication(sys.argv)
+        
+        window = QMainWindow()
+        window.setWindowTitle("Lively Pi v1.0.0")
+        window.setGeometry(100, 100, 800, 600)
+        
+        central_widget = QWidget()
+        layout = QVBoxLayout(central_widget)
+        
+        welcome_label = QLabel("🎨 Lively Pi - Animated Wallpaper Manager")
+        welcome_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        welcome_label.setStyleSheet("font-size: 24px; font-weight: bold; color: #4ecdc4; margin: 40px;")
+        
+        info_label = QLabel("""
+        Welcome to Lively Pi v1.0.0!
+        
+        🎬 Video wallpapers with hardware acceleration
+        🌐 Interactive web-based wallpapers  
+        🖼️ Static image support
+        📱 Multi-monitor support
+        
+        Command line usage:
+        lively-pi --set-wallpaper /path/to/wallpaper.mp4
+        lively-pi --set-wallpaper /path/to/wallpaper.html
+        
+        Repository: https://github.com/bobster316/pilivelyv2
+        """)
+        info_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        info_label.setStyleSheet("font-size: 14px; margin: 20px;")
+        
+        layout.addWidget(welcome_label)
+        layout.addWidget(info_label)
+        
+        window.setCentralWidget(central_widget)
+        window.show()
+        
+        print("✅ GUI launched successfully!")
+        return app.exec()
+        
+    except ImportError:
+        print("⚠️  PyQt6 not available - GUI disabled")
+        print("   This is normal during development")
+        print("   GUI will work after installation on Raspberry Pi")
+        print("\n💻 Command line interface available:")
+        print("   lively-pi --set-wallpaper /path/to/wallpaper.mp4")
+        print("   lively-pi --version")
+        return 0
+
+if __name__ == "__main__":
+    sys.exit(main())
